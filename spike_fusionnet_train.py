@@ -7,7 +7,16 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
-from spike_fusionnet_model import Dataset_Pro, FusionNet, Inception_like_FusionNet, Inception_like_FusionNet_without_bn, Inception_like_FusionNet_with_SEW_BNTT_and_mines, Inception_like_FusionNet_with_SEW_RDB_BNTT_and_mines, input_replicate, summaries
+from spike_fusionnet_model import input_replicate, summaries, Dataset_Pro
+
+from net_struct import \
+Inception_SFusionNet_with_SEW_RDB_tEBN_2_paths, \
+Inception_SFusionNet_with_SEW_tEBN_2_paths, \
+Inception_SFusionNet_with_tEBN_2_paths, \
+Inception_SFusionNet_with_tEBN_BN
+
+
+
 import numpy as np
 from quality_indices import SAM_group
 import scipy.io as sio
@@ -44,19 +53,21 @@ cudnn.benchmark = False
 args = get_args_parser().parse_args()
 
 # ============= 2) HYPER PARAMS(Pre-Defined) ==========#
-lr = 1e-3  #学习率
+lr = 1e-5  #学习率
 epochs = 1000 # 450
 ckpt = 50
 batch_size = 4
 T = 16
 
-beta_1 = 1e-10  # L1 penalty
+beta_1 = 1e-5  # L1 penalty
+
+model_name = 'Inception_SFusionNet_with_SEW_tEBN_2_paths'
 # model_path = "Weights/250.pth"
 model_path = ''
 # ============= 3) Load Model + Loss + Optimizer + Learn_rate_update ==========#
 # model = FusionNet(16, 32, 8).cuda()
 # with lasso
-model = Inception_like_FusionNet_with_SEW_RDB_BNTT_and_mines(8, 32, 8, T=T, connect='add').cuda()
+model = Inception_SFusionNet_with_SEW_tEBN_2_paths.Inception_like_FusionNet_with_SEW_BNTT_and_mines(8, 32, 8, T=T, connect='and').cuda()
 if os.path.isfile(model_path):
     model.load_state_dict(torch.load(model_path))   ## Load the pretrained Encoder
     print('FusionNet is Successfully Loaded from %s' % (model_path))
@@ -77,7 +88,7 @@ lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma
 # writer = SummaryWriter('./train_logs_fusionnet/Inception_like_FusionNet_with_SEW_RDB_BNTT_and_mines')    ## Tensorboard_show: case 2
 
 def save_checkpoint(model, epoch):  # save model function
-    model_folder = 'Weight_Inception_like_FusionNet_with_SEW_RDB_BNTT_and_mines'
+    model_folder = 'Weight_' + model_name
     model_out_path = model_folder + '/' + "{}.pth".format(epoch)
     # create file folder if it is not existed
     if not os.path.exists(model_folder):
@@ -119,7 +130,7 @@ def train(training_data_loader, validate_data_loader,start_epoch=0):
 
             loss = criterion(sr, gt)  # compute loss
             lasso_loss = loss + beta_1 * l1_penalty  # compute lasso loss
-            epoch_train_loss.append(lasso_loss.item())  # save all losses into a vector for one epoch
+            epoch_train_loss.append(loss.item())  # save all losses into a vector for one epoch
 
             lasso_loss.backward()   # fixed
             optimizer.step()  # fixed
@@ -156,7 +167,7 @@ def train(training_data_loader, validate_data_loader,start_epoch=0):
 
                 loss = criterion(sr, gt)
                 lasso_loss = loss + beta_1 * l1_penalty
-                epoch_val_loss.append(lasso_loss.item())
+                epoch_val_loss.append(loss.item())
                 
                 functional.reset_net(model)
                 
@@ -176,7 +187,7 @@ def train(training_data_loader, validate_data_loader,start_epoch=0):
             sr_img = transforms.ToPILImage()(sr_img_sample_RGB)
             # save to file
             
-            image_folder = 'val_Inception_like_FusionNet_with_SEW_RDB_BNTT_and_mines'
+            image_folder = 'val_' + model_name
             image_path = image_folder + '/' + str(i) + '.png'
             if not os.path.exists(image_folder):
                 os.makedirs(image_folder)
