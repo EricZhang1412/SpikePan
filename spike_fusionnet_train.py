@@ -53,13 +53,11 @@ cudnn.benchmark = False
 args = get_args_parser().parse_args()
 
 # ============= 2) HYPER PARAMS(Pre-Defined) ==========#
-lr = 1e-5  #学习率
+lr = 1e-2  #学习率
 epochs = 1000 # 450
 ckpt = 50
 batch_size = 4
 T = 16
-
-beta_1 = 1e-5  # L1 penalty
 
 model_name = 'Inception_SFusionNet_with_SEW_tEBN_2_paths'
 # model_path = "Weights/250.pth"
@@ -75,7 +73,7 @@ if os.path.isfile(model_path):
 summaries(model, grad=True)    ## Summary the Network
 # criterion = nn.MSELoss(size_average=True).cuda()  ## Define the Loss function L2Loss
 criterion = nn.L1Loss().cuda()  ## Define the Loss function L1Loss
-optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0)
+optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-14)
 lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=0.1)   # learning-rate update
 
 # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=1e-7)  ## optimizer 2: SGD
@@ -122,17 +120,17 @@ def train(training_data_loader, validate_data_loader,start_epoch=0):
             # model_input = torch.cat((lms, pan_hp), 1)  # concatenate ms_hp and pan_hp
             model_input = pan_hp - lms
             optimizer.zero_grad()  # fixed
-            hp_sr, l1_penalty = model(model_input)  # call model
+            hp_sr = model(model_input)  # call model
             sr = hp_sr + lms  # output:= lms + hp_sr
             # for t in range(T):
             #     hp_sr = model(model_input)  # call model
             #     sr = hp_sr + lms  # output:= lms + hp_sr
 
             loss = criterion(sr, gt)  # compute loss
-            lasso_loss = loss + beta_1 * l1_penalty  # compute lasso loss
+           
             epoch_train_loss.append(loss.item())  # save all losses into a vector for one epoch
 
-            lasso_loss.backward()   # fixed
+            loss.backward()   # fixed
             optimizer.step()  # fixed
             # 优化一次参数后，需要重置网络的状态，因为SNN的神经元是有“记忆”的
             functional.reset_net(model)
@@ -159,14 +157,14 @@ def train(training_data_loader, validate_data_loader,start_epoch=0):
                 # model_eval_input = torch.cat((lms, pan_hp), 1)  # concatenate ms_hp and pan_hp
                 model_eval_input = pan_hp - lms
 
-                hp_sr, l1_penalty = model(model_eval_input)
+                hp_sr = model(model_eval_input)
                 sr = hp_sr + lms
 
                 # for t in range(T):
                     
 
                 loss = criterion(sr, gt)
-                lasso_loss = loss + beta_1 * l1_penalty
+   
                 epoch_val_loss.append(loss.item())
                 
                 functional.reset_net(model)

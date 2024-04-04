@@ -117,7 +117,7 @@ class SEW_Resblock_con5_with_BNTT_and_mines(nn.Module):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.lif1(out)
-        out_l1_penalty_1 = torch.norm(out, 1)
+        
         out = self.conv2(out)
         out = self.bn2(out)
         out = self.lif2(out)
@@ -127,7 +127,7 @@ class SEW_Resblock_con5_with_BNTT_and_mines(nn.Module):
             out = out * x_identity
         elif self.connection == 'iand':
             out = out * (1 - x_identity)
-        return out, out_l1_penalty_1
+        return out
 
 class SEW_Resblock_con3_with_BNTT_and_mines(nn.Module):
     def __init__(self, in_channels, out_channels, T, connection):
@@ -149,7 +149,7 @@ class SEW_Resblock_con3_with_BNTT_and_mines(nn.Module):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.lif1(out)
-        out_l1_penalty_1 = torch.norm(out, 1)
+        
         out = self.conv2(out)
         out = self.bn2(out)
         out = self.lif2(out)
@@ -159,7 +159,7 @@ class SEW_Resblock_con3_with_BNTT_and_mines(nn.Module):
             out = out * x_identity
         elif self.connection == 'iand':
             out = out * (1 - x_identity)
-        return out, out_l1_penalty_1
+        return out
 
 class Inception_like_FusionNet_with_SEW_BNTT_and_mines(nn.Module):
     def __init__(self, in_ch, mid_ch, out_ch, T:int, connect):
@@ -198,16 +198,16 @@ class Inception_like_FusionNet_with_SEW_BNTT_and_mines(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.lif1(x)
-        x_l1_penalty_1 = torch.norm(x, 1)
-        x, x_l1_penalty_res_1 = self.resblock1(x)
-        x, x_l1_penalty_res_2 = self.resblock2(x)
-        x, x_l1_penalty_res_3 = self.resblock3(x)
-        x, x_l1_penalty_res_4 = self.resblock4(x)
+        
+        x = self.resblock1(x)
+        x = self.resblock2(x)
+        x = self.resblock3(x)
+        x = self.resblock4(x)
 
-        x1, x_l1_penalty_res_5 = self.resblock_1(x)
-        x1, x_l1_penalty_res_6 = self.resblock_2(x1)
-        x1, x_l1_penalty_res_7 = self.resblock_3(x1)
-        x1, x_l1_penalty_res_8 = self.resblock_4(x1)
+        x1 = self.resblock_1(x)
+        x1 = self.resblock_2(x1)
+        x1 = self.resblock_3(x1)
+        x1 = self.resblock_4(x1)
 
         x = torch.cat([x, x1], dim=2)
         # print(x.shape)
@@ -215,20 +215,17 @@ class Inception_like_FusionNet_with_SEW_BNTT_and_mines(nn.Module):
         x_mines = self.conv3(x)
         x_mines = self.bn3(x_mines)
         x_mines = self.lif3(x_mines)
-        x_mines_l1_penalty_1 = torch.norm(x_mines, 1)
+        
         x = self.conv2(x)
         x = self.bn2(x)
         x = self.lif2(x)
-        x_l1_penalty_2 = torch.norm(x, 1)
+        
         
         result_mines = self.lif3.v_seq.permute(1, 2, 3, 4, 0)
         result = self.lif2.v_seq.permute(1, 2, 3, 4, 0) # [N,C,H,W,T]
         result = torch.cat([result, -result_mines], dim=-1)# [N,C,H,W,2T]
         result = torch.mean(result, dim=-1)
         output = torch.tanh(result)
-        l1_penalty = x_l1_penalty_1 + x_l1_penalty_2 + \
-                     x_l1_penalty_res_1 + x_l1_penalty_res_2 + x_l1_penalty_res_3 + x_l1_penalty_res_4 + \
-                     x_l1_penalty_res_5 + x_l1_penalty_res_6 + x_l1_penalty_res_7 + x_l1_penalty_res_8 + \
-                     x_mines_l1_penalty_1
-        return output, l1_penalty
+        
+        return output
     
