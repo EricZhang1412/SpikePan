@@ -624,11 +624,13 @@ class Resblock_con5_with_BNTT_and_mines(nn.Module):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.lif1(out)
+        out_l1_penalty_1 = torch.norm(out, 1)
         out = self.conv2(out)
         out = self.bn2(out)
         out += x_identity
         out = self.lif2(out)
-        return out
+        out_l1_penalty_2 = torch.norm(out, 1)
+        return out, out_l1_penalty_1, out_l1_penalty_2
     
 class Resblock_con3_with_BNTT_and_mines(nn.Module):
     def __init__(self, in_channels, out_channels, T):
@@ -649,11 +651,13 @@ class Resblock_con3_with_BNTT_and_mines(nn.Module):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.lif1(out)
+        out_l1_penalty_1 = torch.norm(out, 1)
         out = self.conv2(out)
         out = self.bn2(out)
         out += x_identity
         out = self.lif2(out)
-        return out
+        out_l1_penalty_2= torch.norm(out, 1)
+        return out, out_l1_penalty_1, out_l1_penalty_2
     
 class Inception_like_FusionNet_with_BNTT_and_mines(nn.Module):
     def __init__(self, in_ch, mid_ch, out_ch, T:int):
@@ -691,15 +695,16 @@ class Inception_like_FusionNet_with_BNTT_and_mines(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.lif1(x)
-        x = self.resblock1(x)
-        x = self.resblock2(x)
-        x = self.resblock3(x)
-        x = self.resblock4(x)
+        x_l1_penalty_1 = torch.norm(x, 1)
+        x, x_res1_l1_penalty_1, x_res1_l1_penalty_2 = self.resblock1(x)
+        x, x_res2_l1_penalty_1, x_res2_l1_penalty_2 = self.resblock2(x)
+        x, x_res3_l1_penalty_1, x_res3_l1_penalty_2 = self.resblock3(x)
+        x, x_res4_l1_penalty_1, x_res4_l1_penalty_2 = self.resblock4(x)
 
-        x1 = self.resblock_1(x)
-        x1 = self.resblock_2(x1)
-        x1 = self.resblock_3(x1)
-        x1 = self.resblock_4(x1)
+        x1, x1_res1_l1_penalty_1, x1_res1_l1_penalty_2  = self.resblock_1(x)
+        x1, x1_res2_l1_penalty_1, x1_res2_l1_penalty_2= self.resblock_2(x1)
+        x1, x1_res3_l1_penalty_1, x1_res3_l1_penalty_2= self.resblock_3(x1)
+        x1, x1_res4_l1_penalty_1, x1_res4_l1_penalty_2= self.resblock_4(x1)
 
         x = torch.cat([x, x1], dim=2)
         # print(x.shape)
@@ -716,7 +721,15 @@ class Inception_like_FusionNet_with_BNTT_and_mines(nn.Module):
         result = torch.cat([result, -result_mines], dim=-1)# [N,C,H,W,2T]
         result = torch.mean(result, dim=-1)
         output = torch.tanh(result)
-        return output
+        l1_penalty = x_res1_l1_penalty_1 + x_res1_l1_penalty_2 + \
+                    x_res2_l1_penalty_1 + x_res2_l1_penalty_2 + \
+                    x_res3_l1_penalty_1 + x_res3_l1_penalty_2 + \
+                    x_res4_l1_penalty_1 + x_res4_l1_penalty_2 + \
+                    x1_res1_l1_penalty_1 +  x1_res1_l1_penalty_2 + \
+                    x1_res2_l1_penalty_1 +  x1_res2_l1_penalty_2 + \
+                    x1_res3_l1_penalty_1 +  x1_res3_l1_penalty_2 + \
+                    x1_res4_l1_penalty_1 +  x1_res4_l1_penalty_2
+        return output, l1_penalty
 
 #########add SEW_Block#########
 class SEW_Resblock_con5_with_BNTT_and_mines(nn.Module):
