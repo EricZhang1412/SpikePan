@@ -1,0 +1,13 @@
+test_results*
+
+train_logs*
+val_*
+Weight*
+Weights*
+
+*.txt
+*.pth
+*.m
+
+.idea
+__pycache__
