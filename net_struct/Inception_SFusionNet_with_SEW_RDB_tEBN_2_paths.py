@@ -105,11 +105,11 @@ class SEW_RDB_con5_with_BNTT_and_mines(nn.Module):
         self.conv1 = layer.Conv2d(in_channels, out_channels, kernel_size=5, stride=1, padding=2, bias=False)
         self.bn1 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
         # self.relu1 = nn.ReLU(inplace=True)
-        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True)
+        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True, surrogate_function=surrogate.ATan())
         self.conv2 = layer.Conv2d(out_channels, out_channels, kernel_size=5, stride=1, padding=2, bias=False)
         self.bn2 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
         # self.relu2 = nn.ReLU(inplace=True)
-        # self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True)
+        # self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True, surrogate_function=surrogate.ATan())
         # functional.set_step_mode(self, step_mode='m')
 
     def forward(self, x):
@@ -139,11 +139,11 @@ class SEW_RDB_con3_with_BNTT_and_mines(nn.Module):
         self.conv1 = layer.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
         # self.relu1 = nn.ReLU(inplace=True)
-        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True)
+        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True, surrogate_function=surrogate.ATan())
         self.conv2 = layer.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
         # self.relu2 = nn.ReLU(inplace=True)
-        # self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True)
+        # self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True, surrogate_function=surrogate.ATan())
         # functional.set_step_mode(self, step_mode='m')
 
     def forward(self, x):
@@ -174,7 +174,7 @@ class Inception_like_FusionNet_with_SEW_RDB_BNTT_and_mines(nn.Module):
         # self.conv_3 = layer.Conv2d(in_ch, mid_ch, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=mid_ch)
         # self.relu1 = nn.ReLU(inplace=True)
-        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True)
+        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True, surrogate_function=surrogate.ATan())
         self.resblock1 = SEW_RDB_con5_with_BNTT_and_mines(mid_ch, mid_ch, T=self.T, connection=self.connect)
         self.resblock2 = SEW_RDB_con5_with_BNTT_and_mines(mid_ch, mid_ch, T=self.T, connection=self.connect)
         self.resblock3 = SEW_RDB_con5_with_BNTT_and_mines(mid_ch, mid_ch, T=self.T, connection=self.connect)
