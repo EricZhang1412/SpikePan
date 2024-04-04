@@ -867,7 +867,7 @@ class SEW_RDB_con5_with_BNTT_and_mines(nn.Module):
         self.conv2 = layer.Conv2d(out_channels, out_channels, kernel_size=5, stride=1, padding=2, bias=False)
         self.bn2 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
         # self.relu2 = nn.ReLU(inplace=True)
-        self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True)
+        # self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True)
         # functional.set_step_mode(self, step_mode='m')
 
     def forward(self, x):
@@ -878,16 +878,16 @@ class SEW_RDB_con5_with_BNTT_and_mines(nn.Module):
         out_l1_penalty_1 = torch.norm(out, 1)
         out = self.conv2(out)
         out = self.bn2(out)
-        out = self.lif2(out)
-        out_l1_penalty_2 = torch.norm(out, 1)
+        # out = self.lif2(out)
+        # out_l1_penalty_2 = torch.norm(out, 1)
         # if self.connection == 'add':
         #     out = out + x_identity
         # elif self.connection == 'and':
         #     out = out * x_identity
         # elif self.connection == 'iand':
         #     out = out * (1 - x_identity)
-        # return x_identity, out, out_l1_penalty_1
-        return x_identity, out, out_l1_penalty_1, out_l1_penalty_2
+        return x_identity, out, out_l1_penalty_1
+        # return x_identity, out, out_l1_penalty_1, out_l1_penalty_2
     
 class SEW_RDB_con3_with_BNTT_and_mines(nn.Module):
     def __init__(self, in_channels, out_channels, T, connection):
@@ -901,7 +901,7 @@ class SEW_RDB_con3_with_BNTT_and_mines(nn.Module):
         self.conv2 = layer.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
         # self.relu2 = nn.ReLU(inplace=True)
-        self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True)
+        # self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True)
         # functional.set_step_mode(self, step_mode='m')
 
     def forward(self, x):
@@ -912,16 +912,16 @@ class SEW_RDB_con3_with_BNTT_and_mines(nn.Module):
         out_l1_penalty_1 = torch.norm(out, 1)
         out = self.conv2(out)
         out = self.bn2(out)
-        out = self.lif2(out)
-        out_l1_penalty_2 = torch.norm(out, 1)
+        # out = self.lif2(out)
+        # out_l1_penalty_2 = torch.norm(out, 1)
         # if self.connection == 'add':
         #     out = out + x_identity
         # elif self.connection == 'and':
         #     out = out * x_identity
         # elif self.connection == 'iand':
         #     out = out * (1 - x_identity)
-        # return x_identity, out, out_l1_penalty_1
-        return x_identity, out, out_l1_penalty_1, out_l1_penalty_2
+        return x_identity, out, out_l1_penalty_1
+        # return x_identity, out, out_l1_penalty_1, out_l1_penalty_2
 
 class Inception_like_FusionNet_with_SEW_RDB_BNTT_and_mines(nn.Module):
     def __init__(self, in_ch, mid_ch, out_ch, T:int, connect):
@@ -961,10 +961,10 @@ class Inception_like_FusionNet_with_SEW_RDB_BNTT_and_mines(nn.Module):
         x = self.bn1(x)
         x = self.lif1(x)
         x_l1_penalty_1 = torch.norm(x, 1)
-        x1_indentity, x1_out, x1_l1_penalty_1, x1_l1_penalty_2 = self.resblock1(x)
-        x2_indentity, x2_out, x2_l1_penalty_1, x2_l1_penalty_2 = self.resblock2(x1_out)
-        x3_indentity, x3_out, x3_l1_penalty_1, x3_l1_penalty_2 = self.resblock3(x2_out)
-        x4_indentity, x4_out, x4_l1_penalty_1, x4_l1_penalty_2 = self.resblock4(x3_out)
+        x1_indentity, x1_out, x1_l1_penalty_1 = self.resblock1(x)
+        x2_indentity, x2_out, x2_l1_penalty_1 = self.resblock2(x1_out)
+        x3_indentity, x3_out, x3_l1_penalty_1 = self.resblock3(x2_out)
+        x4_indentity, x4_out, x4_l1_penalty_1 = self.resblock4(x3_out)
 
         if (self.connect == 'add'):
             x_res1_out = x1_indentity + x2_indentity + x3_indentity + x4_indentity + x4_out
@@ -973,10 +973,10 @@ class Inception_like_FusionNet_with_SEW_RDB_BNTT_and_mines(nn.Module):
         elif (self.connect == 'iand'):
             x_res1_out = (1 - x1_indentity) * (1 - x2_indentity) * (1 - x3_indentity) * (1 - x4_indentity) * x4_out # 合理与否有待考证
 
-        x1_identity_2, x1_out_2, x1_l1_penalty_1_1, x1_l1_penalty_1_2 = self.resblock_1(x)
-        x2_indentity_2, x2_out_2, x2_l1_penalty_1_1, x2_l1_penalty_1_2 = self.resblock_2(x1_out_2)
-        x3_indentity_2, x3_out_2, x3_l1_penalty_1_1, x3_l1_penalty_1_2 = self.resblock_3(x2_out_2)
-        x4_indentity_2, x4_out_2, x4_l1_penalty_1_1, x4_l1_penalty_1_2 = self.resblock_4(x3_out_2)
+        x1_identity_2, x1_out_2, x1_l1_penalty_1_1 = self.resblock_1(x)
+        x2_indentity_2, x2_out_2, x2_l1_penalty_1_1 = self.resblock_2(x1_out_2)
+        x3_indentity_2, x3_out_2, x3_l1_penalty_1_1 = self.resblock_3(x2_out_2)
+        x4_indentity_2, x4_out_2, x4_l1_penalty_1_1 = self.resblock_4(x3_out_2)
 
         if (self.connect == 'add'):
             x_res2_out = x1_identity_2 + x2_indentity_2 + x3_indentity_2 + x4_indentity_2 + x4_out_2
@@ -1003,10 +1003,10 @@ class Inception_like_FusionNet_with_SEW_RDB_BNTT_and_mines(nn.Module):
         result = torch.mean(result, dim=-1)
         output = torch.tanh(result)
         l1_penalty = x_l1_penalty_1 + x_l1_penalty_2 + \
-                     x1_l1_penalty_1 + x1_l1_penalty_2 + x2_l1_penalty_1 + x2_l1_penalty_2 + \
-                     x3_l1_penalty_1 + x3_l1_penalty_2 + x4_l1_penalty_1 + x4_l1_penalty_2 + \
-                     x1_l1_penalty_1_1 + x1_l1_penalty_1_2 + x2_l1_penalty_1_1 + x2_l1_penalty_1_2 + \
-                     x3_l1_penalty_1_1 + x3_l1_penalty_1_2 + x4_l1_penalty_1_1 + x4_l1_penalty_1_2 + \
+                     x1_l1_penalty_1 + x2_l1_penalty_1 + \
+                     x3_l1_penalty_1 + x4_l1_penalty_1 + \
+                     x1_l1_penalty_1_1 + x2_l1_penalty_1_1 + \
+                     x3_l1_penalty_1_1 + x4_l1_penalty_1_1 + \
                      x_mines_l1_penalty_1
         return output, l1_penalty
     
