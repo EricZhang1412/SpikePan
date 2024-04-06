@@ -118,8 +118,8 @@ class FusionNet(nn.Module):
         self.conv2 = layer.Conv2d(mid_ch, out_ch, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_ch)
         self.bn3 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_ch)
-        self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True)
-        self.lif3 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True)
+        self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
+        self.lif3 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
         self.conv3 = layer.Conv2d(mid_ch, out_ch, kernel_size=3, stride=1, padding=1, bias=False)
 
         functional.set_step_mode(self, step_mode='m')
