@@ -76,11 +76,11 @@ if os.path.isfile(model_path):
 summaries(model, grad=True)    ## Summary the Network
 # criterion = nn.MSELoss(size_average=True).cuda()  ## Define the Loss function L2Loss
 criterion = nn.L1Loss().cuda()  ## Define the Loss function L1Loss
-optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-14)
-lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=0.1)   # learning-rate update
+# optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-14)
+# lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=0.1)   # learning-rate update
 
-# optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=1e-7)  ## optimizer 2: SGD
-# lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=180, gamma=0.1)  # learning-rate update: lr = lr* 1/gamma for each step_size = 180
+optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=1e-7)  ## optimizer 2: SGD
+lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=180, gamma=0.1)  # learning-rate update: lr = lr* 1/gamma for each step_size = 180
 
 # ============= 4) Tensorboard_show + Save_model ==========#
 # if os.path.exists('train_logs'):  # for tensorboard: copy dir of train_logs  ## Tensorboard_show: case 1
