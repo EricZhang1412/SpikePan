@@ -4,10 +4,12 @@ train_logs*
 val_*
 Weight*
 Weights*
+weights*
 
 *.txt
 *.pth
 *.m
+*.zip
 
 .idea
 __pycache__

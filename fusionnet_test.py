@@ -3,7 +3,12 @@ import torch
 import cv2
 import numpy as np
 # from fusionnet_model import FusionNet
-from spike_fusionnet_model import FusionNet, FusionNet_8_res, Inception_like_FusionNet_with_BNTT_and_mines, Inception_like_FusionNet_without_bn
+from net_struct import \
+    Inception_SFusionNet_with_SEW_RDB_tEBN_2_paths, \
+    Inception_SFusionNet_with_SEW_tEBN_2_paths, \
+    Inception_SFusionNet_with_tEBN_2_paths, \
+    Inception_SFusionNet_with_tEBN_BN, \
+    Inception_SFusionNet_ori_with_TEBN_2_ATAN
 import h5py
 import scipy.io as sio
 import os
@@ -79,7 +84,9 @@ class Dataset_Pro(data.Dataset):
 ###################################################################
 # ------------------- Main Test (Run second) -------------------
 ###################################################################
-ckpt = 'A:/projects/fusionnet/200_tebn.pth'   # chose model
+ckpt = 'A:/projects/fusionnet/weights_Inception_SFusionNet_ori_with_TEBN_2_ATAN/500.pth'   # chose model
+T = 16
+connect_type = 'add'
 
 def save_mat_data(sr, scale, output_dir):
     mat_dir = os.path.join(output_dir, "results")
@@ -96,7 +103,7 @@ def test(test_data_loader):
     print('Start testing...')
     # gt, lms, ms_hp, pan_hp = load_set(file_path)
     i = 1
-    model = Inception_like_FusionNet_with_BNTT_and_mines(8, 32, 8, T=16).cuda().eval()   # fixed, important!
+    model = Inception_SFusionNet_ori_with_TEBN_2_ATAN.FusionNet(8, 32, 8, T=T).cuda().eval()   # fixed, important!
     # spike_seq_monitor = monitor.OutputMonitor(model, neuron.LIFNode)
     # for param in model.parameters():
     #     param.data.abs_()
@@ -104,7 +111,7 @@ def test(test_data_loader):
     weight = torch.load(ckpt)  # load Weights!
     model.load_state_dict(weight) # fixed
 
-    test_folder = 'test_results_Inception_like_FusionNet_with_BNTT_and_mines_200_tebn_mines'
+    test_folder = 'test_results_Inception_SFusionNet_ori_with_TEBN_2_ATAN/500'
     if not os.path.exists(test_folder):
         os.makedirs(test_folder)
 

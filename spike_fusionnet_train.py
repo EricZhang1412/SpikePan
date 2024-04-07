@@ -13,7 +13,9 @@ from net_struct import \
 Inception_SFusionNet_with_SEW_RDB_tEBN_2_paths, \
 Inception_SFusionNet_with_SEW_tEBN_2_paths, \
 Inception_SFusionNet_with_tEBN_2_paths, \
-Inception_SFusionNet_with_tEBN_BN
+Inception_SFusionNet_with_tEBN_BN, \
+Inception_SFusionNet_ori_with_TEBN_2_ATAN, \
+SP_ori_with_tebn_2_atan_ms
 
 
 
@@ -53,19 +55,20 @@ cudnn.benchmark = False
 args = get_args_parser().parse_args()
 
 # ============= 2) HYPER PARAMS(Pre-Defined) ==========#
-lr = 1e-2  #学习率
+lr = 1e-3  #学习率
 epochs = 1000 # 450
 ckpt = 50
 batch_size = 4
 T = 16
+connect_type = 'add'
 
-model_name = 'Inception_SFusionNet_with_SEW_tEBN_2_paths'
+model_name = f'SP_ori_with_tebn_2_atan_ms_lr_{lr}_bs_{batch_size}_connect_{connect_type}'
 # model_path = "Weights/250.pth"
 model_path = ''
 # ============= 3) Load Model + Loss + Optimizer + Learn_rate_update ==========#
 # model = FusionNet(16, 32, 8).cuda()
 # with lasso
-model = Inception_SFusionNet_with_SEW_tEBN_2_paths.Inception_like_FusionNet_with_SEW_BNTT_and_mines(8, 32, 8, T=T, connect='and').cuda()
+model = SP_ori_with_tebn_2_atan_ms.FusionNet(8, 32, 8, T=T).cuda()
 if os.path.isfile(model_path):
     model.load_state_dict(torch.load(model_path))   ## Load the pretrained Encoder
     print('FusionNet is Successfully Loaded from %s' % (model_path))
@@ -159,9 +162,6 @@ def train(training_data_loader, validate_data_loader,start_epoch=0):
 
                 hp_sr = model(model_eval_input)
                 sr = hp_sr + lms
-
-                # for t in range(T):
-                    
 
                 loss = criterion(sr, gt)
    
