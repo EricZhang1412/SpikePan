@@ -1,5 +1,3 @@
-######大G特G######
-
 import torch
 import torch.nn as nn
 import numpy as np
@@ -79,99 +77,47 @@ class TemporalEffectiveBatchNorm2d(TemporalEffectiveBatchNormNd):
         # x.shape = [T, N, C, H, W]
         return self.bn(x_seq) * self.scale.view(-1, 1, 1, 1, 1)
 
-class MS_Resblock_4(nn.Module):
+class Resblock(nn.Module):
     def __init__(self, in_channels, out_channels, T:int):
-        super(MS_Resblock_4, self).__init__()
+        super(Resblock, self).__init__()
         self.T = T
         self.conv1 = layer.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
-        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
+        # self.relu1 = nn.ReLU(inplace=True)
+        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True, surrogate_function=surrogate.ATan())
         self.conv2 = layer.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
-        self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
-
-        self.mid_lif1 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
-
-        self.conv3 = layer.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn3 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
-        self.lif3 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
-        self.conv4 = layer.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn4 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
-        self.lif4 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
-
-        self.mid_lif2 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
-
-        self.conv5 = layer.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn5 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
-        self.lif5 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
-        self.conv6 = layer.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn6 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
-        self.lif6 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
-
-        self.mid_lif3 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
-
-        self.conv7 = layer.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn7 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
-        self.lif7 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
-        self.conv8 = layer.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn8 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
-        self.lif8 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
-
-        self.mid_lif4 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
-
+        # self.relu2 = nn.ReLU(inplace=True)
+        self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True, surrogate_function=surrogate.ATan())
+        # functional.set_step_mode(self, step_mode='m')
 
 
     def forward(self, x):
         x_identity = x
-        out = self.lif1(x)
-        out = self.conv1(out)
+        out = self.conv1(x)
         out = self.bn1(out)
-        out = self.lif2(out)
+        out = self.lif1(out)
         out = self.conv2(out)
         out = self.bn2(out)
         out += x_identity
-        
-        out_2 = self.mid_lif1(out)
-        out_2_identity = self.mid_lif1.v_seq
-        out_2 = self.conv3(out_2)
-        out_2 = self.bn3(out_2)
-        out_2 = self.lif3(out_2)
-        out_2 = self.conv4(out_2)
-        out_2 = self.bn4(out_2)
-        out_2 += out_2_identity
-
-        out_3 = self.mid_lif2(out_2)
-        out_3_identity = self.mid_lif2.v_seq
-        out_3 = self.conv5(out_3)
-        out_3 = self.bn5(out_3)
-        out_3 = self.lif5(out_3)
-        out_3 = self.conv6(out_3)
-        out_3 = self.bn6(out_3)
-        out_3 += out_3_identity
-        
-        out_4 = self.mid_lif3(out_3)
-        out_4_identity = self.mid_lif3.v_seq
-        out_4 = self.conv7(out_4)
-        out_4 = self.bn7(out_4)
-        out_4 = self.lif7(out_4)
-        out_4 = self.conv8(out_4)
-        out_4 = self.bn8(out_4)
-        out_4 += out_4_identity
-
-        out_4 = self.mid_lif4(out_4)
-        return out_4
-
+        out = self.lif2(out)
+        return out
     
 class FusionNet(nn.Module):
     def __init__(self, in_ch, mid_ch, out_ch, T:int):
         super(FusionNet, self).__init__()
         self.T = T
+        max_spike_time = 1
+
+        self.le = encoding.LatencyEncoder(max_spike_time)
         self.conv1 = layer.Conv2d(in_ch, mid_ch, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=mid_ch)
         # self.relu1 = nn.ReLU(inplace=True)
-        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True,  store_v_seq=True, surrogate_function=surrogate.ATan())
-        # MS_Resblock_4
-        self.resblock = MS_Resblock_4(mid_ch, mid_ch, T=self.T)
+        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True, surrogate_function=surrogate.ATan())
+        self.resblock1 = Resblock(mid_ch, mid_ch, T=self.T)
+        self.resblock2 = Resblock(mid_ch, mid_ch, T=self.T)
+        self.resblock3 = Resblock(mid_ch, mid_ch, T=self.T)
+        self.resblock4 = Resblock(mid_ch, mid_ch, T=self.T)
         self.conv2 = layer.Conv2d(mid_ch, out_ch, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_ch)
         self.bn3 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_ch)
@@ -183,11 +129,16 @@ class FusionNet(nn.Module):
 
     def forward(self, x):
         x = x.unsqueeze(0).repeat(self.T, 1, 1, 1, 1)
+        x = self.le(x)
+
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.lif1(x)
-        x = self.resblock(self.lif1.v_seq)
-        # x = self.resblock(x)
+        x = self.resblock1(x)
+        x = self.resblock2(x)
+        x = self.resblock3(x)
+        x = self.resblock4(x)
+        
         x_mines = self.conv3(x)
         x_mines = self.bn3(x_mines)
         x_mines = self.lif3(x_mines)

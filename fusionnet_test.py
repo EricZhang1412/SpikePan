@@ -19,6 +19,11 @@ import draw
 from einops import rearrange
 from spikingjelly.activation_based import neuron, encoding, functional, layer, monitor
 
+from spikingjelly import visualizing
+from matplotlib import pyplot as plt
+from FSDS_code import FrequencySpectrumDistributionSimilarity
+from pytorch_model_summary import summary
+
 
 ###################################################################
 # ------------------- Sub-Functions (will be used) -------------------
@@ -72,8 +77,7 @@ class Dataset_Pro(data.Dataset):
         self.pan_hp = torch.from_numpy(pan_hp_tmp).permute(0, 3, 1, 2) # Nx1xHxW:
 
     def __getitem__(self, index):
-        return self.gt[index, :, :, :].float(), \
-               self.lms[index, :, :, :].float(), \
+        return self.lms[index, :, :, :].float(), \
                self.ms_hp[index, :, :, :].float(), \
                self.pan_hp[index, :, :, :].float()
 
@@ -84,8 +88,8 @@ class Dataset_Pro(data.Dataset):
 ###################################################################
 # ------------------- Main Test (Run second) -------------------
 ###################################################################
-ckpt = 'A:/projects/fusionnet/weights_Inception_SFusionNet_ori_with_TEBN_2_ATAN/500.pth'   # chose model
-T = 16
+ckpt = 'A:/projects/fusionnet/130_t_32.pth'   # chose model
+T = 32
 connect_type = 'add'
 
 def save_mat_data(sr, scale, output_dir):
@@ -103,15 +107,18 @@ def test(test_data_loader):
     print('Start testing...')
     # gt, lms, ms_hp, pan_hp = load_set(file_path)
     i = 1
+    s_list = []
+    v_list = []
     model = Inception_SFusionNet_ori_with_TEBN_2_ATAN.FusionNet(8, 32, 8, T=T).cuda().eval()   # fixed, important!
     # spike_seq_monitor = monitor.OutputMonitor(model, neuron.LIFNode)
     # for param in model.parameters():
     #     param.data.abs_()
+    
 
     weight = torch.load(ckpt)  # load Weights!
     model.load_state_dict(weight) # fixed
 
-    test_folder = 'test_results_Inception_SFusionNet_ori_with_TEBN_2_ATAN/500'
+    test_folder = 'test_results_multiExm1_130_t_32'
     if not os.path.exists(test_folder):
         os.makedirs(test_folder)
 
@@ -122,29 +129,60 @@ def test(test_data_loader):
             # ms_hp Nx8x16x16
             # pan_hp Nx1x64x64
             
-            gt, lms, ms_hp, pan_hp = batch[0].cuda(), batch[1].cuda(), batch[2].cuda(), batch[3].cuda()
+            lms, ms_hp, pan_hp = batch[0].cuda(), batch[1].cuda(), batch[2].cuda()
             pan_hp = input_replicate(pan_hp, 8)
             model_input = pan_hp - lms
             print(model_input.shape)
+            print(summary(model, model_input, show_input=False, show_hierarchical=False))
 
-            hp_sr = model(model_input)  # call model
+            hp_sr, lif1_out = model(model_input)  # call model
             sr = hp_sr + lms  # output:= lms + hp_sr
 
             # convert to numpy type with permute and squeeze: HxWxC (go to cpu for easy saving)
             sr = torch.squeeze(sr).permute(1, 2, 0).cpu().detach().numpy() * 2047.  # HxWxC
-            file_string = f"output_mulExm_{i-1}.mat"
+            # file_string = f"output_mulExm_{i-1}.mat"
             # save_mat_data(sr, 2047, test_folder)
-            save_name = os.path.join(test_folder, file_string) # fixed! save as .mat format that will used in Matlab!
-            sio.savemat(save_name, {'sr': sr})  # fixed!
+            # save_name = os.path.join(test_folder, file_string) # fixed! save as .mat format that will used in Matlab!
+            # sio.savemat(save_name, {'sr': sr})  # fixed!
 
             # draw the image
             # sr = draw.linstretch(sr, 0.01, 0.99)  # fixed!
-            sr = draw.to_rgb(sr)
-            cv2.imwrite(test_folder + f"/{i}.png", sr*255)  # fixed! save as .png format that will used in Python!
+            # sr = draw.to_rgb(sr)
+            # cv2.imwrite(test_folder + f"/{i}.png", sr*255)  # fixed! save as .png format that will used in Python!
 
+            # calculate FSDS value
+            # fsds_result = FrequencySpectrumDistributionSimilarity(sr, gt)
+            # print(f"fsds_result: {fsds_result}")
+            
+
+            #print spike map using spikingjelly.visualizing
+            # spike_seq_monitor = monitor.OutputMonitor(model.lif1, neuron.LIFNode)
+            # v_seq_monitor = monitor.AttributeMonitor('v_seq', pre_forward=False, net=model, instance=model.lif1)
+            # s_list.append(spike_seq_monitor.records)
+            # v_list.append(model.lif1.v_seq.cpu().numpy())
+            # s_list = torch.tensor(s_list)
+            # v_list = torch.cat(model.lif1.v_seq)
+
+            # visualizing.plot_1d_spikes(spikes=np.asarray(model.lif1.v_seq.unsqueeze(0).cpu()), 
+            #                            title='Membrane Potentials', 
+            #                            xlabel='Simulating Step',
+            #                            ylabel='Neuron Index', 
+            #                            dpi=200)
+            # visualizing.plot_2d_heatmap(array=np.asarray(lif1_out.flatten(1,4).cpu()), 
+            #                             title='Membrane Potentials', 
+            #                             xlabel='Simulating Step',
+            #                             ylabel='Neuron Index', 
+            #                             int_x_ticks=True, 
+            #                             x_max=T,
+            #                             dpi=200)
+            # # plt.show()
+            # plt.savefig(f'membrane_potentials_model.lif1_out_{i}.png')
             i = i + 1
 
             functional.reset_net(model)
+            del sr, hp_sr, lif1_out, model_input, lms, ms_hp, pan_hp
+            torch.cuda.empty_cache()
+
 
 ###################################################################
 # ------------------- Main Function (Run first) -------------------

@@ -15,7 +15,9 @@ Inception_SFusionNet_with_SEW_tEBN_2_paths, \
 Inception_SFusionNet_with_tEBN_2_paths, \
 Inception_SFusionNet_with_tEBN_BN, \
 Inception_SFusionNet_ori_with_TEBN_2_ATAN, \
-SP_ori_with_tebn_2_atan_ms
+SP_ori_with_tebn_2_atan_ms, \
+SP_Poission_ori_with_TEBN_2_ATAN, \
+Inception_SFusionNet_ori_with_tdBN_2_ATAN
 
 
 
@@ -55,20 +57,25 @@ cudnn.benchmark = False
 args = get_args_parser().parse_args()
 
 # ============= 2) HYPER PARAMS(Pre-Defined) ==========#
+best_loss = 1
+best_epoch = 0
+best_validate_loss = 1
+best_validate_epoch = 0
+
 lr = 1e-3  #学习率
 epochs = 1000 # 450
 ckpt = 50
-batch_size = 4
-T = 16
-connect_type = 'add'
+batch_size = 2
+T = 32
+connect_type = None
 
-model_name = f'SP_ori_with_tebn_2_atan_ms_lr_{lr}_bs_{batch_size}_connect_{connect_type}'
+model_name = f'Inception_SFusionNet_ori_with_tdBN_2_ATAN_lr_{lr}_bs_{batch_size}_connect_{connect_type}'
 # model_path = "Weights/250.pth"
 model_path = ''
 # ============= 3) Load Model + Loss + Optimizer + Learn_rate_update ==========#
 # model = FusionNet(16, 32, 8).cuda()
 # with lasso
-model = SP_ori_with_tebn_2_atan_ms.FusionNet(8, 32, 8, T=T).cuda()
+model = Inception_SFusionNet_ori_with_tdBN_2_ATAN.FusionNet(8, 32, 8, T=T).cuda()
 if os.path.isfile(model_path):
     model.load_state_dict(torch.load(model_path))   ## Load the pretrained Encoder
     print('FusionNet is Successfully Loaded from %s' % (model_path))
@@ -76,11 +83,11 @@ if os.path.isfile(model_path):
 summaries(model, grad=True)    ## Summary the Network
 # criterion = nn.MSELoss(size_average=True).cuda()  ## Define the Loss function L2Loss
 criterion = nn.L1Loss().cuda()  ## Define the Loss function L1Loss
-# optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-14)
-# lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=0.1)   # learning-rate update
+optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-14)
+lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=0.1)   # learning-rate update
 
-optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=1e-7)  ## optimizer 2: SGD
-lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=180, gamma=0.1)  # learning-rate update: lr = lr* 1/gamma for each step_size = 180
+# optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=1e-7)  ## optimizer 2: SGD
+# lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=180, gamma=0.1)  # learning-rate update: lr = lr* 1/gamma for each step_size = 180
 
 # ============= 4) Tensorboard_show + Save_model ==========#
 # if os.path.exists('train_logs'):  # for tensorboard: copy dir of train_logs  ## Tensorboard_show: case 1
@@ -123,7 +130,7 @@ def train(training_data_loader, validate_data_loader,start_epoch=0):
             # model_input = torch.cat((lms, pan_hp), 1)  # concatenate ms_hp and pan_hp
             model_input = pan_hp - lms
             optimizer.zero_grad()  # fixed
-            hp_sr = model(model_input)  # call model
+            hp_sr, _ = model(model_input)  # call model
             sr = hp_sr + lms  # output:= lms + hp_sr
             # for t in range(T):
             #     hp_sr = model(model_input)  # call model
@@ -146,7 +153,14 @@ def train(training_data_loader, validate_data_loader,start_epoch=0):
 
         t_loss = np.nanmean(np.array(epoch_train_loss))  # compute the mean value of all losses, as one epoch loss
         # writer.add_scalar('mse_loss/t_loss', t_loss, epoch)  # write to tensorboard to check
-        print('Epoch: {}/{} training loss: {:.7f}'.format(epochs, epoch, t_loss))  # print loss for each epoch
+        # print('Epoch: {}/{} training loss: {:.7f}'.format(epochs, epoch, t_loss))  # print loss for each epoch
+        if t_loss<best_loss:
+            best_loss = t_loss
+            best_epoch = epoch
+ 
+        # writer.add_scalar('mse_loss/t_loss', t_loss, epoch)  # write to tensorboard to check
+        print('Epoch: {}/{} training loss: {:.7f}'.format(epochs, epoch, t_loss))  # print loss for each epoch
+        print('best_Epoch: {}/{} best_training loss: {:.7f}'.format(epochs, best_epoch, best_loss)) 
 
         if epoch % ckpt == 0:  # if each ckpt epochs, then start to save model
             save_checkpoint(model, epoch)
@@ -160,11 +174,11 @@ def train(training_data_loader, validate_data_loader,start_epoch=0):
                 # model_eval_input = torch.cat((lms, pan_hp), 1)  # concatenate ms_hp and pan_hp
                 model_eval_input = pan_hp - lms
 
-                hp_sr = model(model_eval_input)
+                hp_sr, _ = model(model_eval_input)
                 sr = hp_sr + lms
 
                 loss = criterion(sr, gt)
-   
+
                 epoch_val_loss.append(loss.item())
                 
                 functional.reset_net(model)
@@ -172,7 +186,13 @@ def train(training_data_loader, validate_data_loader,start_epoch=0):
         if epoch % 5 == 0:
             v_loss = np.nanmean(np.array(epoch_val_loss))
             # writer.add_scalar('val_Fusionnet_64_mean/v_loss', v_loss, epoch)
-            print('             validate loss: {:.7f}'.format(v_loss))
+            # print('             validate loss: {:.7f}'.format(v_loss))
+            if v_loss<best_validate_loss:
+                best_validate_loss=v_loss
+                best_validate_epoch = epoch
+                # writer.add_scalar('val_Fusionnet_64_mean/v_loss', v_loss, epoch)
+            print('  validate loss: {:.7f}'.format(v_loss))
+            print('  best validate epoch: {} best validate loss: {:.7f}'.format(best_validate_epoch, best_validate_loss))
             ######add image output
             ######pick one image to show
             sr_img_sample = sr[0].cpu().detach()

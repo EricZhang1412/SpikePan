@@ -84,11 +84,11 @@ class Resblock(nn.Module):
         self.conv1 = layer.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
         # self.relu1 = nn.ReLU(inplace=True)
-        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True, surrogate_function=surrogate.ATan())
+        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
         self.conv2 = layer.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_channels)
         # self.relu2 = nn.ReLU(inplace=True)
-        self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True, surrogate_function=surrogate.ATan())
+        self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
         # functional.set_step_mode(self, step_mode='m')
 
 
@@ -110,7 +110,7 @@ class FusionNet(nn.Module):
         self.conv1 = layer.Conv2d(in_ch, mid_ch, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=mid_ch)
         # self.relu1 = nn.ReLU(inplace=True)
-        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True, surrogate_function=surrogate.ATan())
+        self.lif1 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
         self.resblock1 = Resblock(mid_ch, mid_ch, T=self.T)
         self.resblock2 = Resblock(mid_ch, mid_ch, T=self.T)
         self.resblock3 = Resblock(mid_ch, mid_ch, T=self.T)
@@ -129,6 +129,7 @@ class FusionNet(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.lif1(x)
+        lif1_out = x
         x = self.resblock1(x)
         x = self.resblock2(x)
         x = self.resblock3(x)
@@ -146,4 +147,4 @@ class FusionNet(nn.Module):
         result = torch.cat([result, -result_mines], dim=-1)# [N,C,H,W,2T]
         result = torch.mean(result, dim=-1)
         output = torch.tanh(result)
-        return output
+        return output, lif1_out
