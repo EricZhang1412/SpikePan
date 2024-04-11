@@ -15,7 +15,6 @@ Inception_SFusionNet_with_SEW_tEBN_2_paths, \
 Inception_SFusionNet_with_tEBN_2_paths, \
 Inception_SFusionNet_with_tEBN_BN, \
 Inception_SFusionNet_ori_with_TEBN_2_ATAN, \
-Inception_SFusionNet_ori_with_TEBN_bn_ATAN, \
 Inception_SFusionNet_ori_with_TEBN_2_ATAN_wT
 
 
@@ -41,10 +40,10 @@ cudnn.benchmark = False
 # args = get_args_parser().parse_args()
 
 # ============= 2) HYPER PARAMS(Pre-Defined) ==========#
-lr = 1e-5  #学习率
+lr = 1e-3  #学习率
 epochs = 1000 # 450
 ckpt = 50
-batch_size = 4
+batch_size = 16
 T1 = 4
 T2 = 2
 
@@ -189,11 +188,11 @@ def train(training_data_loader, validate_data_loader,start_epoch=0):
 # ------------------- Main Function (Run first) -------------------
 ###################################################################
 if __name__ == "__main__":
-    train_set = Dataset_Pro('D:/AI/pancollection/wv3/train_wv3.h5')  # creat data for training   # 100
+    train_set = Dataset_Pro('A:/pancollection/small_training_data/train_small.h5')  # creat data for training   # 100
     training_data_loader = DataLoader(dataset=train_set, num_workers=0, batch_size=batch_size, shuffle=True,  # 3 32
                                       pin_memory=True, drop_last=True)  # put training data to DataLoader for batches
 
-    validate_set = Dataset_Pro('D:/AI/pancollection/wv3/valid_wv3.h5')  # creat data for validation
+    validate_set = Dataset_Pro('A:/pancollection/small_training_data/valid_small.h5')  # creat data for validation
     validate_data_loader = DataLoader(dataset=validate_set, num_workers=0, batch_size=batch_size, shuffle=True,
                                       pin_memory=True, drop_last=True)  # put training data to DataLoader for batches
     

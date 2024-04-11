@@ -121,10 +121,11 @@ class FusionNet(nn.Module):
         self.bn2 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_ch)
         self.bn3 = TemporalEffectiveBatchNorm2d(T=self.T, num_features=out_ch)
         self.lif2 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
-        self.synfilt1 = layer.SynapseFilter(tau=100., learnable=True, step_mode='m')
-        self.synfilt2 = layer.SynapseFilter(tau=100., learnable=True, step_mode='m')
         self.lif3 = neuron.LIFNode(tau=2.0, detach_reset=True, store_v_seq=True, surrogate_function=surrogate.ATan())
         self.conv3 = layer.Conv2d(mid_ch, out_ch, kernel_size=3, stride=1, padding=1, bias=False)
+
+        self.dropout1 = layer.Dropout(p=0.1, step_mode='m')
+        self.dropout2 = layer.Dropout(p=0.05, step_mode='m')
 
         functional.set_step_mode(self, step_mode='m')
 
@@ -136,24 +137,23 @@ class FusionNet(nn.Module):
         x = self.bn1(x)
         x = self.lif1(x)
         lif1_out = x
-        
+        x = self.dropout1(x)
         x = self.resblock1(x)
         x = self.resblock2(x)
         
         x = self.resblock3(x)
         x = self.resblock4(x)
-       
+        x = self.dropout2(x)
         
         x_mines = self.conv3(x)
         x_mines = self.bn3(x_mines)
-        x_mines = self.synfilt1(x_mines)
+        x_mines = self.lif3(x_mines)
         x = self.conv2(x)
         x = self.bn2(x)
-        x = self.synfilt2(x)
+        x = self.lif2(x)
         
-        # result_mines = self.lif3.v_seq.permute(1, 2, 3, 4, 0)
-        result_mines = x_mines.permute(1, 2, 3, 4, 0)
-        result = x.permute(1, 2, 3, 4, 0) # [N,C,H,W,T]
+        result_mines = self.lif3.v_seq.permute(1, 2, 3, 4, 0)
+        result = self.lif2.v_seq.permute(1, 2, 3, 4, 0) # [N,C,H,W,T]
         result = torch.cat([result, -result_mines], dim=-1)# [N,C,H,W,2T]
         result = torch.mean(result, dim=-1)
         output = torch.tanh(result)

@@ -17,7 +17,9 @@ Inception_SFusionNet_with_tEBN_BN, \
 Inception_SFusionNet_ori_with_TEBN_2_ATAN, \
 SP_ori_with_tebn_2_atan_ms, \
 SP_Poission_ori_with_TEBN_2_ATAN, \
-Inception_SFusionNet_ori_with_tdBN_2_ATAN
+Inception_SFusionNet_ori_with_tdBN_2_ATAN, \
+sp_ori_TEBN_2_ATAN_multhead, \
+Inception_SFusionNet_with_tdBN_2_paths
 
 
 
@@ -57,25 +59,22 @@ cudnn.benchmark = False
 args = get_args_parser().parse_args()
 
 # ============= 2) HYPER PARAMS(Pre-Defined) ==========#
-best_loss = 1
-best_epoch = 0
-best_validate_loss = 1
-best_validate_epoch = 0
 
-lr = 1e-3  #学习率
+
+lr = 5e-4  #学习率
 epochs = 1000 # 450
 ckpt = 50
-batch_size = 2
+batch_size = 6
 T = 32
 connect_type = None
 
-model_name = f'Inception_SFusionNet_ori_with_tdBN_2_ATAN_lr_{lr}_bs_{batch_size}_connect_{connect_type}'
+model_name = f'Inception_SFusionNet_with_tdBN_2_paths_lr_{lr}_bs_{batch_size}_connect_{connect_type}_T_{T}'
 # model_path = "Weights/250.pth"
 model_path = ''
 # ============= 3) Load Model + Loss + Optimizer + Learn_rate_update ==========#
 # model = FusionNet(16, 32, 8).cuda()
 # with lasso
-model = Inception_SFusionNet_ori_with_tdBN_2_ATAN.FusionNet(8, 32, 8, T=T).cuda()
+model = Inception_SFusionNet_with_tdBN_2_paths.FusionNet(8, 32, 8, T=T).cuda()
 if os.path.isfile(model_path):
     model.load_state_dict(torch.load(model_path))   ## Load the pretrained Encoder
     print('FusionNet is Successfully Loaded from %s' % (model_path))
@@ -107,6 +106,11 @@ def save_checkpoint(model, epoch):  # save model function
 # ------------------- Main Train (Run second)----------------------
 ###################################################################
 def train(training_data_loader, validate_data_loader,start_epoch=0):
+    best_loss = 1
+    best_epoch = 0
+    best_validate_loss = 1
+    best_validate_epoch = 0
+
     print('Start training...')
     # epoch 450, 450*550 / 2 = 123750 / 8806 = 14/per imgae
     i = 5
@@ -154,12 +158,12 @@ def train(training_data_loader, validate_data_loader,start_epoch=0):
         t_loss = np.nanmean(np.array(epoch_train_loss))  # compute the mean value of all losses, as one epoch loss
         # writer.add_scalar('mse_loss/t_loss', t_loss, epoch)  # write to tensorboard to check
         # print('Epoch: {}/{} training loss: {:.7f}'.format(epochs, epoch, t_loss))  # print loss for each epoch
-        if t_loss<best_loss:
+        if t_loss < best_loss:
             best_loss = t_loss
             best_epoch = epoch
  
         # writer.add_scalar('mse_loss/t_loss', t_loss, epoch)  # write to tensorboard to check
-        print('Epoch: {}/{} training loss: {:.7f}'.format(epochs, epoch, t_loss))  # print loss for each epoch
+        print('Epoch: {}/{} training loss: {:.7f}'.format(epochs, epoch, t_loss)) # print loss for each epoch
         print('best_Epoch: {}/{} best_training loss: {:.7f}'.format(epochs, best_epoch, best_loss)) 
 
         if epoch % ckpt == 0:  # if each ckpt epochs, then start to save model

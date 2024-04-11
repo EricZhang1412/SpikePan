@@ -8,7 +8,8 @@ from net_struct import \
     Inception_SFusionNet_with_SEW_tEBN_2_paths, \
     Inception_SFusionNet_with_tEBN_2_paths, \
     Inception_SFusionNet_with_tEBN_BN, \
-    Inception_SFusionNet_ori_with_TEBN_2_ATAN
+    Inception_SFusionNet_ori_with_TEBN_2_ATAN, \
+    sp_ori_TEBN_2_ATAN_multhead
 import h5py
 import scipy.io as sio
 import os
@@ -88,8 +89,8 @@ class Dataset_Pro(data.Dataset):
 ###################################################################
 # ------------------- Main Test (Run second) -------------------
 ###################################################################
-ckpt = 'A:/projects/fusionnet/130_t_32.pth'   # chose model
-T = 32
+ckpt = 'A:/projects/fusionnet/950_multhead_t_4.pth'   # chose model
+T = 4
 connect_type = 'add'
 
 def save_mat_data(sr, scale, output_dir):
@@ -109,7 +110,7 @@ def test(test_data_loader):
     i = 1
     s_list = []
     v_list = []
-    model = Inception_SFusionNet_ori_with_TEBN_2_ATAN.FusionNet(8, 32, 8, T=T).cuda().eval()   # fixed, important!
+    model = sp_ori_TEBN_2_ATAN_multhead.FusionNet(8, 32, 8, T=T).cuda().eval()   # fixed, important!
     # spike_seq_monitor = monitor.OutputMonitor(model, neuron.LIFNode)
     # for param in model.parameters():
     #     param.data.abs_()
@@ -118,7 +119,7 @@ def test(test_data_loader):
     weight = torch.load(ckpt)  # load Weights!
     model.load_state_dict(weight) # fixed
 
-    test_folder = 'test_results_multiExm1_130_t_32'
+    test_folder = 'test_results_multiExm1_950_multhead_t_4'
     if not os.path.exists(test_folder):
         os.makedirs(test_folder)
 
@@ -140,15 +141,15 @@ def test(test_data_loader):
 
             # convert to numpy type with permute and squeeze: HxWxC (go to cpu for easy saving)
             sr = torch.squeeze(sr).permute(1, 2, 0).cpu().detach().numpy() * 2047.  # HxWxC
-            # file_string = f"output_mulExm_{i-1}.mat"
+            file_string = f"output_mulExm_{i-1}.mat"
             # save_mat_data(sr, 2047, test_folder)
-            # save_name = os.path.join(test_folder, file_string) # fixed! save as .mat format that will used in Matlab!
-            # sio.savemat(save_name, {'sr': sr})  # fixed!
+            save_name = os.path.join(test_folder, file_string) # fixed! save as .mat format that will used in Matlab!
+            sio.savemat(save_name, {'sr': sr})  # fixed!
 
             # draw the image
             # sr = draw.linstretch(sr, 0.01, 0.99)  # fixed!
-            # sr = draw.to_rgb(sr)
-            # cv2.imwrite(test_folder + f"/{i}.png", sr*255)  # fixed! save as .png format that will used in Python!
+            sr = draw.to_rgb(sr)
+            cv2.imwrite(test_folder + f"/{i}.png", sr*255)  # fixed! save as .png format that will used in Python!
 
             # calculate FSDS value
             # fsds_result = FrequencySpectrumDistributionSimilarity(sr, gt)
