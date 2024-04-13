@@ -29,6 +29,8 @@ import scipy.io as sio
 from torchvision import transforms
 from PIL import Image
 
+from dataaur import dataaug
+
 import shutil
 from torch.utils.tensorboard import SummaryWriter
 from spikingjelly.activation_based import neuron, encoding, functional
@@ -64,11 +66,11 @@ args = get_args_parser().parse_args()
 lr = 5e-4  #学习率
 epochs = 1000 # 450
 ckpt = 50
-batch_size = 6
+batch_size = 4
 T = 32
 connect_type = None
-
-model_name = f'Inception_SFusionNet_with_tdBN_2_paths_lr_{lr}_bs_{batch_size}_connect_{connect_type}_T_{T}'
+dataaug_param = True
+model_name = f'Inception_SFusionNet_with_tdBN_2_paths_lr_{lr}_bs_{batch_size}_connect_{connect_type}_T_{T}_dataaug_{dataaug_param}'
 # model_path = "Weights/250.pth"
 model_path = ''
 # ============= 3) Load Model + Loss + Optimizer + Learn_rate_update ==========#
@@ -130,6 +132,8 @@ def train(training_data_loader, validate_data_loader,start_epoch=0):
             # ms_hp Nx8x16x16
             # pan_hp Nx1x64x64
             gt, lms, ms_hp, pan_hp = batch[0].cuda(), batch[1].cuda(), batch[2].cuda(), batch[3].cuda()
+            if dataaug == True:
+                gt, lms, ms_hp, pan_hp = dataaug(gt, lms, ms_hp, pan_hp, ro = True, cr = True, fl = True, cut = True)
             pan_hp = input_replicate(pan_hp, 8)  # replicate the pan image to 8 channels
             # model_input = torch.cat((lms, pan_hp), 1)  # concatenate ms_hp and pan_hp
             model_input = pan_hp - lms

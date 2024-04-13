@@ -9,7 +9,8 @@ from net_struct import \
     Inception_SFusionNet_with_tEBN_2_paths, \
     Inception_SFusionNet_with_tEBN_BN, \
     Inception_SFusionNet_ori_with_TEBN_2_ATAN, \
-    sp_ori_TEBN_2_ATAN_multhead
+    sp_ori_TEBN_2_ATAN_multhead, \
+    Inception_SFusionNet_with_tdBN_2_paths
 import h5py
 import scipy.io as sio
 import os
@@ -55,11 +56,11 @@ class Dataset_Pro(data.Dataset):
         data = h5py.File(file_path)  # NxCxHxW = 0x1x2x3=Nx8x64x64
 
         # tensor type:
-        gt1 = data["gt"][...]  # convert to np tpye for CV2.filter
-        gt1 = np.array(gt1, dtype=np.float32) / 2047.
-        self.gt = torch.from_numpy(gt1)  # NxCxHxW: 8x64x64
+        # gt1 = data["gt"][...]  # convert to np tpye for CV2.filter
+        # gt1 = np.array(gt1, dtype=np.float32) / 2047.
+        # self.gt = torch.from_numpy(gt1)  # NxCxHxW: 8x64x64
 
-        print(self.gt.size())
+        # print(self.gt.size())
 
         lms1 = data["lms"][...]  # convert to np tpye for CV2.filter
         lms1 = np.array(lms1, dtype=np.float32) / 2047.
@@ -84,13 +85,13 @@ class Dataset_Pro(data.Dataset):
 
             #####必要函数
     def __len__(self):
-        return self.gt.shape[0]
+        return self.lms.shape[0]
 
 ###################################################################
 # ------------------- Main Test (Run second) -------------------
 ###################################################################
-ckpt = 'A:/projects/fusionnet/950_multhead_t_4.pth'   # chose model
-T = 4
+ckpt = 'A:/projects/fusionnet/80_tdbn_t_32.pth'   # chose model
+T = 32
 connect_type = 'add'
 
 def save_mat_data(sr, scale, output_dir):
@@ -110,7 +111,7 @@ def test(test_data_loader):
     i = 1
     s_list = []
     v_list = []
-    model = sp_ori_TEBN_2_ATAN_multhead.FusionNet(8, 32, 8, T=T).cuda().eval()   # fixed, important!
+    model = Inception_SFusionNet_with_tdBN_2_paths.FusionNet(8, 32, 8, T=T).cuda().eval()   # fixed, important!
     # spike_seq_monitor = monitor.OutputMonitor(model, neuron.LIFNode)
     # for param in model.parameters():
     #     param.data.abs_()
@@ -119,7 +120,7 @@ def test(test_data_loader):
     weight = torch.load(ckpt)  # load Weights!
     model.load_state_dict(weight) # fixed
 
-    test_folder = 'test_results_multiExm1_950_multhead_t_4'
+    test_folder = 'test_results_Orig_80_tdbn_t_32'
     if not os.path.exists(test_folder):
         os.makedirs(test_folder)
 
@@ -189,7 +190,7 @@ def test(test_data_loader):
 # ------------------- Main Function (Run first) -------------------
 ###################################################################
 if __name__ == '__main__':
-    test_set = Dataset_Pro('A:/pancollection/wv3/test_wv3_multiExm1.h5')
+    test_set = Dataset_Pro('A:/pancollection/wv3/test_wv3_OrigScale_multiExm1.h5')
     test_data_loader = DataLoader(dataset=test_set,
                                   num_workers=0,
                                   batch_size=1,
