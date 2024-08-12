@@ -37,12 +37,12 @@ parser.add_argument('-T', default=32, type=int, help='simulating time-steps')
 parser.add_argument('-device', default='cuda:0', help='device')
 args = parser.parse_args()
 # print(args)
-lr = 0.001  #学习率
+lr = 0.0005  #学习率
 epochs = 500 # 450
 ckpt = 10
 batch_size = 4
-model_path = ''
-add_model = 0
+model_path = 'Weight_Spannet_with_tdbn_2_atan/10.pth'
+add_model = 10
 model_name = 'Spannet_with_tdbn_2_atan'
 
 # ============= 3) Load Model + Loss + Optimizer + Learn_rate_update ==========#
@@ -79,7 +79,7 @@ def save_checkpoint(model, epoch):  # save model function
 ###################################################################
 # ------------------- Main Train (Run second)----------------------
 ###################################################################
-def train(training_data_loader, validate_data_loader,start_epoch=0):
+def train(training_data_loader, validate_data_loader,start_epoch=add_model):
     print('Start training...')
     # epoch 450, 450*550 / 2 = 123750 / 8806 = 14/per imgae
     i = 5
